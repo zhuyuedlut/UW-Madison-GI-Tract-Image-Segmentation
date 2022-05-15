@@ -5,16 +5,23 @@
 # @date       : 2022/5/14 23:26
 # @brief      :  uw-madison-gi数据集读取
 """
+import albumentations as A
 import numpy as np
 import torch
-from torch.utils.data import Dataset, dataloader
+import pytorch_lightning as pl
+
+from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Resize, ToTensor
 
 from PIL import Image
 
+from config.uw_config import cfg
+
+
 def load_image(path):
     image = Image.open(path).convert('RGB')
     return image
+
 
 def prepare_mask_data(segmentation):
     all_values = map(int, segmentation.split(' '))
@@ -45,13 +52,15 @@ def prepare_mask(segmentation, height, width):
 
     return mask_array
 
+
 class UWDataset(Dataset):
-    def __init__(self, df, width=256, height=256):
+    def __init__(self, df, width=256, height=256, transforms=None):
         super(UWDataset, self).__init__()
         self.df = df
         self.width = width
         self.height = height
         self.resize = Resize(width, height)
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.df)
@@ -70,10 +79,36 @@ class UWDataset(Dataset):
         class_label = self.df.loc[index, 'class']
         mask[class_label, ...] = label
 
-        return image, label
-
+        if self.transforms is not None:
+            image = self.transforms(image)
+            label = self.transforms(label)
+            return ToTensor()(image), ToTensor()(label)
+        else:
+            return image, label
 
     def load_mask(self, segmentation, height, width):
         if segmentation != 'nan':
             return Image.fromarray(prepare_mask(segmentation, height, width))
         return Image.fromarray(np.zeros((height, width)))
+
+
+class UWDataModule(pl.LightningDataModule):
+    def __init__(self, df_train, df_valid):
+        super(UWDataModule, self).__init__()
+        self.df_train = df_train
+        self.df_valid = df_valid
+
+        self.train_dataset = None
+        self.valid_dataset = None
+
+    def setup(self, stage=None):
+        self.train_dataset = UWDataset(self.df_train)
+        self.valid_dataset = UWDataset(self.df_valid)
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=cfg.train_bs, shuffle=True, drop_last=True,
+                          num_workers=cfg.workers)
+
+    def val_dataloader(self):
+        return DataLoader(self.valid_dataset, batch_size=cfg.valid_bs, shuffle=True, drop_last=True,
+                          num_workers=cfg.workers)
