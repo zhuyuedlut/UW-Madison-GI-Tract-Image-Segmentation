@@ -7,3 +7,6 @@ https://www.kaggle.com/competitions/uw-madison-gi-tract-image-segmentation/overv
 python preprocess_data.py
 ```
 the bash file will add train image path to original train.csv 
+
+##### 实验对比
+不对input使用transformers

@@ -5,7 +5,6 @@
 # @date       : 2022/5/14 23:26
 # @brief      :  uw-madison-gi数据集读取
 """
-import albumentations as A
 import numpy as np
 import torch
 import pytorch_lightning as pl
@@ -47,7 +46,7 @@ def fetch_pos_pixel_indexes(indexes, counts):
 def prepare_mask(segmentation, height, width):
     indexes, counts = prepare_mask_data(segmentation)
     pos_pixel_indexes = fetch_pos_pixel_indexes(indexes, counts)
-    mask_array = np.zeros(height, width)
+    mask_array = np.zeros(height * width)
     mask_array[pos_pixel_indexes] = 1
 
     return mask_array
@@ -59,7 +58,7 @@ class UWDataset(Dataset):
         self.df = df
         self.width = width
         self.height = height
-        self.resize = Resize(width, height)
+        self.resize = Resize((width, height))
         self.transforms = transforms
 
     def __len__(self):
@@ -112,3 +111,18 @@ class UWDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.valid_dataset, batch_size=cfg.valid_bs, shuffle=True, drop_last=True,
                           num_workers=cfg.workers)
+
+
+if __name__ == "__main__":
+    import pandas as pd
+
+
+    df = pd.read_csv('../data/train.csv')
+    df['segmentation'] = df['segmentation'].astype('str')
+
+    dataset = UWDataset(df)
+    train_dataloader = DataLoader(dataset, batch_size=2, shuffle=True, drop_last=True)
+
+    for i, data in enumerate(train_dataloader):
+        print(data)
+
