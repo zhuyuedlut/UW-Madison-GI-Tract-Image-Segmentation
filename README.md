@@ -8,5 +8,8 @@ python preprocess_data.py
 ```
 the bash file will add train image path to original train.csv 
 
-##### 实验对比
-不对input使用transformers
+##### todolist
+- 不对input使用transformers，对比实验效果
+- pytorch-lighting trainer precision=16设置是为什么
+- 增加n_fold处理
+- 

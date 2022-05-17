@@ -6,8 +6,12 @@
 # @brief      : uw segmentation不同的model实现
 """
 import torch
+import torch.optim as optim
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
+
+from torch.optim import lr_scheduler
+from config.uw_config import cfg
 
 
 class UWModel(pl.LightningModule):
@@ -51,4 +55,21 @@ class UWModel(pl.LightningModule):
         return {'loss', loss}
 
     def configure_optimizers(self):
-        pass
+        optimizer = optim.Adam(self.parameters(), lr=cfg.lr)
+
+        if cfg.scheduler == 'CosineAnnealingLR':
+            scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.T_max, eta_min=cfg.min_lr)
+        elif cfg.scheduler == 'ConsineAnnealingWarmRestarts':
+            scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=cfg.T_0, eta_min=cfg.min_lr)
+        elif cfg.scheduler == 'ReduceLROnPlateau':
+            scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=7, threshold=0.0001,
+                                                       min_lr=cfg.min_lr, )
+        elif cfg.scheduler == 'ExponentialLR':
+            scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.85)
+        elif cfg.scheduler is None:
+            scheduler = None
+
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': scheduler
+        }

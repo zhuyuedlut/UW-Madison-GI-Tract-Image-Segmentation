@@ -1,6 +1,8 @@
-numpy;
-pandas;
-pytorch-lightning;
-easydict;
-segmentation_models_pytorch;
-albumentations;
+numpy
+pandas
+torch
+torchvision
+pytorch-lightning
+easydict
+segmentation_models_pytorch
+albumentations
