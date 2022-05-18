@@ -124,5 +124,6 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(dataset, batch_size=2, shuffle=True, drop_last=True)
 
     for i, data in enumerate(train_dataloader):
-        pass
+        image, label = data
+        print(label)
 

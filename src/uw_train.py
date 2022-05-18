@@ -14,10 +14,11 @@ sys.path.append(os.path.join(BASE_DIR, '..'))
 
 import numpy as np
 import pandas as pd
+import segmentation_models_pytorch as smp
 import pytorch_lightning as pl
 
+
 from pytorch_lightning.loggers import WandbLogger
-from pytorch_lightning import Trainer
 
 from config.uw_config import cfg
 from datasets.uw_madison_gi import UWDataModule
@@ -46,8 +47,16 @@ if __name__ == "__main__":
     fractions = np.array([0.8, 0.2])
     df_train, df_val = np.array_split(df, (fractions[:-1].cumsum() * len(df)).astype(int))
 
+    JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
+    DiceLoss = smp.losses.DiceLoss(mode='multilabel')
+    BCELoss = smp.losses.SoftBCEWithLogitsLoss()
+    LovaszLoss = smp.losses.LovaszLoss(mode='multilabel', per_image=False)
+    TverskyLoss = smp.losses.TverskyLoss(mode='multilabel', log_loss=False)
+
+    def loss_fn(y_pred, y_true):
+        return 0.5 * BCELoss(y_pred, y_true) + 0.5 * TverskyLoss(y_pred, y_true)
+
+
     data_module = UWDataModule(df_train, df_val)
-
-
-
-
+    model = UWModel(arch='Unet', encoder_name='resnet34', in_channels=3, classes=3, loss_fn=loss_fn)
+    trainer.fit(model, data_module)
