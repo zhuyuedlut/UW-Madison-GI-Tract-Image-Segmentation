@@ -9,6 +9,7 @@
 import os
 import sys
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
 
@@ -28,24 +29,25 @@ from tools.callbacks import model_checkpoint, early_stopping_callback
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
 
-    wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
-                               job_type='train', anonymous=False)
+    # wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
+    #                            job_type='train', anonymous=False)
 
     trainer = pl.Trainer(
-        logger=wandb_logger,
+        # logger=wandb_logger,
         callbacks=[model_checkpoint, early_stopping_callback],
-        num_sanity_val_steps=0,
+        # num_sanity_val_steps=0,
         max_epochs=cfg.T_max,
         gpus=-1,
         progress_bar_refresh_rate=15,
         precision=16
     )
 
-    df = pd.read_csv('../data/train.csv')
+    df = pd.read_csv('./data/train.csv')
     df['segmentation'] = df['segmentation'].astype('str')
 
     fractions = np.array([0.8, 0.2])
     df_train, df_val = np.array_split(df, (fractions[:-1].cumsum() * len(df)).astype(int))
+    df_train.reset_index(inplace=True, drop=False), df_val.reset_index(inplace=True, drop=False)
 
     JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
     DiceLoss = smp.losses.DiceLoss(mode='multilabel')

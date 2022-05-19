@@ -15,12 +15,12 @@ from config.uw_config import cfg
 
 
 class UWModel(pl.LightningModule):
-    def __init__(self, arch, encoder_name, encoder_weights, classes, in_channels, loss_fn):
+    def __init__(self, arch, encoder_name, classes, in_channels, loss_fn):
         super(UWModel, self).__init__()
         self.model = smp.create_model(
             arch=arch,
             encoder_name=encoder_name,
-            encoder_weights=encoder_weights,
+            # encoder_weights=encoder_weights,
             in_channels=in_channels,
             classes=classes
         )
@@ -33,24 +33,24 @@ class UWModel(pl.LightningModule):
 
     def forward(self, image):
         image = (image - self.mean) / self.std
-        mask = self.model(image)
+        pred = self.model(image)
 
-        return mask
+        return pred
 
-    def training_step(self, batch):
-        image, label = batch
+    def training_step(self, batch, batch_idx):
+        image, mask = batch
         predict = self(image)
 
-        loss = self.loss_fn(predict, label)
+        loss = self.loss_fn(predict, mask)
         self.log('train_loss', loss, prog_bar=True, logger=True)
 
         return {'loss': loss}
 
-    def validation_step(self, batch):
-        image, label = batch
+    def validation_step(self, batch, batch_idx):
+        image, mask = batch
         predict = self(image)
 
-        loss = self.loss_fn(predict, label)
+        loss = self.loss_fn(predict, mask)
         self.log('val_loss', loss, prog_bar=True, logger=True)
         return {'loss', loss}
 

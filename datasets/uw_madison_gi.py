@@ -83,7 +83,7 @@ class UWDataset(Dataset):
             label = self.transforms(label)
             return ToTensor()(image), ToTensor()(label)
         else:
-            return image, label
+            return image, mask
 
     def load_mask(self, segmentation, height, width):
         if segmentation != 'nan':

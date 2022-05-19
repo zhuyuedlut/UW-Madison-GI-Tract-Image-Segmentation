@@ -25,7 +25,7 @@ def fetch_file_from_id(root_dir, case_id):
 
 
 if __name__ == '__main__':
-    DATASET_DIR = r'/Users/zhuyue/Code/Datasets/uw-madison-gi-tract-image-segmentation'
+    DATASET_DIR = r'/mnt/datasets/uw-madison-gi-tract-image-segmentation'
     train_df = pd.read_csv(f'{DATASET_DIR}/train.csv')
 
     train_df['segmentation'] = train_df['segmentation'].astype('str')

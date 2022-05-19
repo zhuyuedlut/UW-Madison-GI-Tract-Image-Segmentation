@@ -6,3 +6,4 @@ pytorch-lightning
 easydict
 segmentation_models_pytorch
 albumentations
+wandb
