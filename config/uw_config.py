@@ -15,7 +15,7 @@ cfg.n_fold = 5
 
 cfg.train_bs = 32
 cfg.valid_bs = 64
-cfg.workers = 0
+cfg.workers = 32
 
 cfg.num_classes = 3
 

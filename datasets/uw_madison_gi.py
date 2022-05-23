@@ -109,8 +109,7 @@ class UWDataModule(pl.LightningDataModule):
                           num_workers=cfg.workers)
 
     def val_dataloader(self):
-        return DataLoader(self.valid_dataset, batch_size=cfg.valid_bs, shuffle=True, drop_last=True,
-                          num_workers=cfg.workers)
+        return DataLoader(self.valid_dataset, batch_size=cfg.valid_bs,drop_last=True, num_workers=cfg.workers)
 
 
 if __name__ == "__main__":

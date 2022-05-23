@@ -25,6 +25,8 @@ def fetch_file_from_id(root_dir, case_id):
 
 
 if __name__ == '__main__':
+    from tqdm import tqdm
+
     DATASET_DIR = r'/mnt/datasets/uw-madison-gi-tract-image-segmentation'
     train_df = pd.read_csv(f'{DATASET_DIR}/train.csv')
 
@@ -39,7 +41,7 @@ if __name__ == '__main__':
     train_df["width"] = train_df["path"].apply(lambda x: os.path.split(x)[-1].split("_")[3]).astype("int")
 
     class_names = train_df["class"].unique()
-    for index, label in enumerate(class_names):
+    for index, label in tqdm(enumerate(class_names)):
         # replacing class names with indexes
         train_df["class"].replace(label, index, inplace=True)
 

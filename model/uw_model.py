@@ -37,7 +37,7 @@ class UWModel(pl.LightningModule):
 
         return pred
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, _):
         image, mask = batch
         predict = self(image)
 

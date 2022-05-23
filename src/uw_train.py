@@ -29,13 +29,13 @@ from tools.callbacks import model_checkpoint, early_stopping_callback
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
 
-    # wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
-    #                            job_type='train', anonymous=False)
+    wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
+                               job_type='train', anonymous=False)
 
     trainer = pl.Trainer(
-        # logger=wandb_logger,
+        logger=wandb_logger,
         callbacks=[model_checkpoint, early_stopping_callback],
-        # num_sanity_val_steps=0,
+        num_sanity_val_steps=0,
         max_epochs=cfg.T_max,
         gpus=-1,
         progress_bar_refresh_rate=15,
