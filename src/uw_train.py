@@ -18,13 +18,15 @@ import pandas as pd
 import segmentation_models_pytorch as smp
 import pytorch_lightning as pl
 
-
+from sklearn.model_selection import StratifiedGroupKFold
 from pytorch_lightning.loggers import WandbLogger
 
 from config.uw_config import cfg
 from datasets.uw_madison_gi import UWDataModule
 from model.uw_model import UWModel
 from tools.callbacks import model_checkpoint, early_stopping_callback
+
+from tools.utils import preprocess_data
 
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
@@ -42,23 +44,23 @@ if __name__ == "__main__":
         precision=16
     )
 
-    df = pd.read_csv('./data/train.csv')
-    df['segmentation'] = df['segmentation'].astype('str')
-
-    fractions = np.array([0.8, 0.2])
-    df_train, df_val = np.array_split(df, (fractions[:-1].cumsum() * len(df)).astype(int))
-    df_train.reset_index(inplace=True, drop=False), df_val.reset_index(inplace=True, drop=False)
-
     JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
     DiceLoss = smp.losses.DiceLoss(mode='multilabel')
     BCELoss = smp.losses.SoftBCEWithLogitsLoss()
     LovaszLoss = smp.losses.LovaszLoss(mode='multilabel', per_image=False)
     TverskyLoss = smp.losses.TverskyLoss(mode='multilabel', log_loss=False)
 
+
     def loss_fn(y_pred, y_true):
         return 0.5 * BCELoss(y_pred, y_true) + 0.5 * TverskyLoss(y_pred, y_true)
 
+    df = preprocess_data()
+    skf = StratifiedGroupKFold(n_splits=cfg.n_fold, shuffle=True, random_state=cfg.seed)
+    for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['empty'], groups=df['case'])):
+        df.loc[val_idx, 'fold'] = fold
 
-    data_module = UWDataModule(df_train, df_val)
-    model = UWModel(arch='Unet', encoder_name='resnet34', in_channels=3, classes=3, loss_fn=loss_fn)
-    trainer.fit(model, data_module)
+    for fold in range(cfg.n_fold):
+        print(f'Start Train Fold: {fold}', flush=True)
+        data_module = UWDataModule(df, fold)
+        model = UWModel(arch='Unet', encoder_name='resnet34', in_channels=3, classes=3, loss_fn=loss_fn)
+        trainer.fit(model, data_module)

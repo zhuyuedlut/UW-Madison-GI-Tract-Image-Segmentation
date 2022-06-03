@@ -22,87 +22,58 @@ def load_image(path):
     return image
 
 
-def prepare_mask_data(segmentation):
-    all_values = map(int, segmentation.split(' '))
-    starterIndex, pixCount = [], []
-
-    for index, value in enumerate(all_values):
-        if index % 2:
-            pixCount.append(value)
-        else:
-            starterIndex.append(value)
-
-    return starterIndex, pixCount
-
-
-def fetch_pos_pixel_indexes(indexes, counts):
-    final_arr = []
-    for index, counts in zip(indexes, counts):
-        final_arr += [index + i for i in range(counts)]
-
-    return final_arr
-
-
-def prepare_mask(segmentation, height, width):
-    indexes, counts = prepare_mask_data(segmentation)
-    pos_pixel_indexes = fetch_pos_pixel_indexes(indexes, counts)
-    mask_array = np.zeros(height * width)
-    mask_array[pos_pixel_indexes] = 1
-
-    return mask_array
-
-
 class UWDataset(Dataset):
-    def __init__(self, df, width=256, height=256, transforms=None):
+    def __init__(self, df, transforms=None):
         super(UWDataset, self).__init__()
         self.df = df
-        self.width = width
-        self.height = height
-        self.resize = Resize((width, height))
+        self.ids = df['ids'].tolist()
+
+        if 'mask_path' in df.columns:
+            self.img_paths = df['image_path'].tolist()
+            self.mask_paths = df['mask_path'].tolist()
+        else:
+            self.img_paths = df['image_paths'].tolist()
+
+        self.resize = Resize((cfg.height, cfg.width))
+
         self.transforms = transforms
+
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, index):
-        path = self.df.loc[index, "path"]
-        image = load_image(path)
-        mask_h, mask_w = self.df.loc[index, 'height'], self.df.loc[index, 'width']
-        segmentation = self.df.loc[index, 'segmentation']
-        label = self.load_mask(segmentation, height=mask_h, width=mask_w)
+        img_path = self.img_paths[index]
+
+        image = load_image(img_path)
+        mask_path = self.mask_paths[index]
+        mask = load_image(mask_path)
 
         image = ToTensor()(self.resize(image))
-        label = ToTensor()(self.resize(label))
-
-        mask = torch.zeros((3, self.height, self.width))
-        class_label = self.df.loc[index, 'class']
-        mask[class_label, ...] = label
+        mask = ToTensor()(self.resize(mask))
 
         if self.transforms is not None:
-            image = self.transforms(image)
-            label = self.transforms(label)
-            return ToTensor()(image), ToTensor()(label)
-        else:
-            return image, mask
+            data = self.transforms(image=image, mask=mask)
+            image, mask = data['image'], data['mask']
 
-    def load_mask(self, segmentation, height, width):
-        if segmentation != 'nan':
-            return Image.fromarray(prepare_mask(segmentation, height, width))
-        return Image.fromarray(np.zeros((height, width)))
+        return image, mask
 
 
 class UWDataModule(pl.LightningDataModule):
-    def __init__(self, df_train, df_valid):
+    def __init__(self, df, fold):
         super(UWDataModule, self).__init__()
-        self.df_train = df_train
-        self.df_valid = df_valid
+        self.df = df
+        self.fold = fold
+
+        self.train_df = df.query("fold!=@fold").reset_index(drop=True)
+        self.valid_df = df.query("fold==@fold").reset_index(drop=True)
 
         self.train_dataset = None
         self.valid_dataset = None
 
     def setup(self, stage=None):
-        self.train_dataset = UWDataset(self.df_train)
-        self.valid_dataset = UWDataset(self.df_valid)
+        self.train_dataset = UWDataset(self.train_df)
+        self.valid_dataset = UWDataset(self.valid_df)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=cfg.train_bs, shuffle=True, drop_last=True,
@@ -111,18 +82,4 @@ class UWDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.valid_dataset, batch_size=cfg.valid_bs,drop_last=True, num_workers=cfg.workers)
 
-
-if __name__ == "__main__":
-    import pandas as pd
-
-
-    df = pd.read_csv('../data/train.csv')
-    df['segmentation'] = df['segmentation'].astype('str')
-
-    dataset = UWDataset(df)
-    train_dataloader = DataLoader(dataset, batch_size=2, shuffle=True, drop_last=True)
-
-    for i, data in enumerate(train_dataloader):
-        image, label = data
-        print(label)
 

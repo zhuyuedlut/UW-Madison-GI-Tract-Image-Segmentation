@@ -11,7 +11,12 @@ from easydict import EasyDict
 cfg = EasyDict()
 
 cfg.seed = 1234
+cfg.DATASET_DIR = r'/mnt/datasets/uw-madison-gi-tract-image-segmentation'
+
 cfg.n_fold = 5
+
+cfg.width = 256
+cfg.height = 256
 
 cfg.train_bs = 32
 cfg.valid_bs = 64
@@ -19,7 +24,7 @@ cfg.workers = 32
 
 cfg.num_classes = 3
 
-cfg.lr = 2e-3
+cfg.lr = 2e-5
 cfg.scheduler = 'CosineAnnealingLR'
 cfg.min_lr = 1e-6
 cfg.epochs = 25
