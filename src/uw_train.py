@@ -13,7 +13,6 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
 
-import numpy as np
 import pandas as pd
 import segmentation_models_pytorch as smp
 import pytorch_lightning as pl
@@ -25,8 +24,6 @@ from config.uw_config import cfg
 from datasets.uw_madison_gi import UWDataModule
 from model.uw_model import UWModel
 from tools.callbacks import model_checkpoint, early_stopping_callback
-
-from tools.utils import preprocess_data
 
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
@@ -51,16 +48,28 @@ if __name__ == "__main__":
     TverskyLoss = smp.losses.TverskyLoss(mode='multilabel', log_loss=False)
 
 
-    def loss_fn(y_pred, y_true):
-        return 0.5 * BCELoss(y_pred, y_true) + 0.5 * TverskyLoss(y_pred, y_true)
+    df = pd.read_csv(f'{cfg.DATASET_DIR}-mask/train.csv')
+    df['segmentation'] = df['segmentation'].fillna('')
+    df['rle_len'] = df['segmentation'].map(len)
 
-    df = preprocess_data()
+    df2 = df.groupby(['id'])['segmentation'].agg(list).to_frame().reset_index()
+    df2 = df2.merge(df.groupby(['id'])['rle_len'].agg(sum).to_frame().reset_index())
+    df = df.drop(columns=['segmentation', 'class', 'rle_len'])
+    df = df.groupby(['id']).head(1).reset_index(drop=True)
+
+    df = df.merge(df2, on=['id'])
+    df['empty'] = (df['rle_len'] == 0)
+
     skf = StratifiedGroupKFold(n_splits=cfg.n_fold, shuffle=True, random_state=cfg.seed)
     for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['empty'], groups=df['case'])):
         df.loc[val_idx, 'fold'] = fold
 
+    def loss_fn(y_pred, y_true):
+        return 0.5 * BCELoss(y_pred, y_true) + 0.5 * TverskyLoss(y_pred, y_true)
+
+
     for fold in range(cfg.n_fold):
         print(f'Start Train Fold: {fold}', flush=True)
         data_module = UWDataModule(df, fold)
-        model = UWModel(arch='Unet', encoder_name='resnet34', in_channels=3, classes=3, loss_fn=loss_fn)
+        model = UWModel(arch='Unet', encoder_name='resnet34', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
         trainer.fit(model, data_module)

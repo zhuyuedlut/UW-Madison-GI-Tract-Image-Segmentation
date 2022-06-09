@@ -15,12 +15,12 @@ from config.uw_config import cfg
 
 
 class UWModel(pl.LightningModule):
-    def __init__(self, arch, encoder_name, classes, in_channels, loss_fn):
+    def __init__(self, arch, encoder_name, encoder_weights, classes, in_channels, loss_fn):
         super(UWModel, self).__init__()
         self.model = smp.create_model(
             arch=arch,
             encoder_name=encoder_name,
-            # encoder_weights=encoder_weights,
+            encoder_weights=encoder_weights,
             in_channels=in_channels,
             classes=classes
         )

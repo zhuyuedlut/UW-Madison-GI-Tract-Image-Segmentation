@@ -5,34 +5,86 @@
 # @date       : 2022/6/3 21:50
 # @brief      : 常用工具函数定义
 """
+import cv2
+import numpy as np
 
-import pandas as pd
+import matplotlib.pyplot as plt
 
-from config.uw_config import cfg
-
-
-def preprocess_data():
-    train_df = pd.read_csv(f'{cfg.DATASET_DIR}/train.csv')
-    train_df['segmentation'] = train_df['segmentation'].fillna('')
-    train_df['rle_len'] = train_df['segmentation'].map(len)
-
-    train_df['mask_path'] = train_df.mask_path.str.replace('/png/', '/np').str.replace('.png', '.npy')
-    temp_df = train_df.groupby(['id'])['segmentation'].agg(list).to_frame().reset_index()
-    temp_df = temp_df.merge(train_df.groupby(['id'])['rle_len'].agg(sum).to_frame().reset_index())
-
-    train_df = train_df.drop(columns=['segmentation', 'class', 'rle_len'])
-    train_df = train_df.groupby(['id']).head(1).reset_index(drop=True)
-    train_df = train_df.merge(temp_df, on=['id'])
-    train_df['empty'] = (train_df.rle_len == 0)
-
-    fault1 = 'case7_day0'
-    fault2 = 'case81_day30'
-    train_df = train_df[~train_df['id'].str.contains(fault1) & ~train_df['id'].str.contains(fault2)].reset_index(
-        drop=True)
-
-    return train_df
+from matplotlib.patches import Rectangle
 
 
-if __name__ == "__main__":
-    df = preprocess_data()
-    print(df.head())
+def get_metadata(row):
+    """
+    从train.csv中id列中解析处case day slice
+    :param row:
+    :return:
+    """
+    case, day, _, slice_id = row['id'].split('_')
+    case, day = case.replace('case', ''), day.replace('day', '')
+    row['case'], row['day'], row['slice'] = int(case), int(day), int(slice_id)
+
+    return row
+
+
+def path2info(row):
+    """
+    根据image_path中的训练图片的名称解析处height, width, case, day, slice
+    :param row:
+    :return:
+    """
+    path = row['image_path']
+    data = path.split('/')
+    slice_id = int(data[-1].split('_')[1])
+    case = int(data[-3].split('_')[0].replace('case',''))
+    day = int(data[-3].split('_')[1].replace('day',''))
+    width = int(data[-1].split('_')[2])
+    height = int(data[-1].split('_')[3])
+
+    row['height'] = height
+    row['width'] = width
+    row['case'] = case
+    row['day'] = day
+    row['slice'] = slice_id
+
+    return row
+
+
+def rle_decode(mask_rle, shape):
+    """
+    将rle字符串还原为对应的H * W的矩阵（单通道图片）
+    :param mask_rle:
+    :param shape:
+    :return:
+    """
+    s = np.asarray(mask_rle.split(), dtype=int)
+    starts = s[0::2] - 1
+    lengths = s[1::2]
+    ends = starts + lengths
+    img = np.zeros(shape[0] * shape[1], dtype=np.uint8)
+    for lo, hi in zip(starts, ends):
+        img[lo:hi] = 1
+    return img.reshape(shape)
+
+
+def load_img(path):
+    img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+    img = img.astype('float32')
+    img = (img - img.min()) / (img.max() - img.min()) * 255
+    img = img.astype('uint8')
+    return img
+
+
+def show_img(img, mask=None):
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    img = clahe.apply(img)
+    plt.imshow(img, cmap='bone')
+
+    if mask is not None:
+        plt.imshow(mask, alpha=0.5)
+        handles = [Rectangle((0,0),1,1, color=_c) for _c in [(0.667,0.0,0.0), (0.0,0.667,0.0), (0.0,0.0,0.667)]]
+        labels = [ "Large Bowel", "Small Bowel", "Stomach"]
+        plt.legend(handles,labels)
+    plt.axis('off')
+
+
+
