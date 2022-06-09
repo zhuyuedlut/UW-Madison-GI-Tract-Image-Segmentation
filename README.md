@@ -8,7 +8,7 @@ https://www.kaggle.com/competitions/uw-madison-gi-tract-image-segmentation/overv
 
 ```bash
 python preprocess_data.py
-```
+``` 
 
 the bash file will add train image path to original train.csv
 
@@ -20,7 +20,7 @@ the bash file will add train image path to original train.csv
 
 ##### experiments record
 
-| arch | encoder  | pretrained| transformers | loss function              | valid loss | submit score |
-|------|----------|------------|--------------|----------------------------|------------|--------------|
-| unet | resnet34 | no         | no           | 0.5BSELoss + 0.5TverskyLoss | todo       | todo         |
+| data preprocess                          | fold   | arch | encoder  | pretrained | transformers | loss function              | valid loss | submit score |
+|------------------------------------------|--------|------|----------|------------|--------------|----------------------------|------------|--------------|
+| original grey image combine channels img | 单模     |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.11649    | 0.834        |
 

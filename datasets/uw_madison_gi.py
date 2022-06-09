@@ -11,7 +11,6 @@ import torch
 import pytorch_lightning as pl
 
 from torch.utils.data import Dataset, DataLoader
-from torchvision.transforms import Resize, ToTensor
 
 from PIL import Image
 
@@ -29,11 +28,8 @@ class UWDataset(Dataset):
         self.df = df
         self.ids = df['id'].tolist()
 
-        if 'mask_path' in df.columns:
-            self.img_paths = df['image_path'].tolist()
-            self.mask_paths = df['mask_path'].tolist()
-        else:
-            self.img_paths = df['image_paths'].tolist()
+        self.img_paths = df['image_path'].tolist()
+        self.mask_paths = df['mask_path'].tolist()
 
         self.transforms = transforms
 
@@ -59,6 +55,22 @@ class UWDataset(Dataset):
         img = np.transpose(img, (2, 0, 1))  # [c, h, w]
         msk = np.transpose(msk, (2, 0, 1))  # [c, h, w]
         return torch.tensor(img), torch.tensor(msk)
+
+
+class UW25dDataset(Dataset):
+    def __init__(self, df, transforms=None):
+        super(UW25dDataset, self).__init__()
+        self.df = df
+        self.ids = df['id'].tolist()
+
+        self.imgs_path = df['image_paths'].tolist()
+        self.mask_path = df['mask_path'].tolist()
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, index):
+        pass
 
 
 class UWDataModule(pl.LightningDataModule):
