@@ -17,6 +17,8 @@ import pandas as pd
 import segmentation_models_pytorch as smp
 import pytorch_lightning as pl
 
+from glob import glob
+
 from sklearn.model_selection import StratifiedGroupKFold
 from pytorch_lightning.loggers import WandbLogger
 
@@ -47,7 +49,6 @@ if __name__ == "__main__":
     LovaszLoss = smp.losses.LovaszLoss(mode='multilabel', per_image=False)
     TverskyLoss = smp.losses.TverskyLoss(mode='multilabel', log_loss=False)
 
-
     df = pd.read_csv(f'{cfg.DATASET_DIR}-mask/train.csv')
     df['segmentation'] = df['segmentation'].fillna('')
     df['rle_len'] = df['segmentation'].map(len)
@@ -59,6 +60,19 @@ if __name__ == "__main__":
 
     df = df.merge(df2, on=['id'])
     df['empty'] = (df['rle_len'] == 0)
+
+    if cfg.use_25d:
+        path_df = pd.DataFrame(glob(f'{cfg.DATASET_DIR}-2.5d/imgs/*'), columns=['image_path'])
+        path_df['mask_path'] = path_df['image_path'].str.replace('imgs', 'masks')
+        path_df['id'] = path_df['image_path'].map(lambda x: x.split('/')[-1].replace('.npy', ''))
+
+        df = df.drop(columns=['image_path', 'mask_path'])
+        df = df.merge(path_df, on=['id'])
+
+    fault1 = 'case7_day0'
+    fault2 = 'case81_day30'
+    df = df[~df['id'].str.contains(fault1) & ~df['id'].str.contains(fault2)].reset_index(drop=True)
+
 
     skf = StratifiedGroupKFold(n_splits=cfg.n_fold, shuffle=True, random_state=cfg.seed)
     for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['empty'], groups=df['case'])):

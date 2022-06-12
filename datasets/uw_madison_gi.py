@@ -38,15 +38,22 @@ class UWDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_paths[index]
-        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-        img = np.tile(img[..., None], [1, 1, 3]).astype('float32')
+        if cfg.use_25d:
+           img = np.load(img_path).astype('float32')
+        else:
+            img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+            img = np.tile(img[..., None], [1, 1, 3]).astype('float32')
+
         mx = np.max(img)
         if mx:
             img /= mx  # scale image to [0, 1]
 
         msk_path = self.mask_paths[index]
-        msk = cv2.imread(msk_path, cv2.COLOR_BGR2RGB).astype('float32')
-        msk /= 255.0  # scale mask to [0, 1]
+        if cfg.use_25d:
+            msk = np.load(msk_path).astype('float32')
+        else:
+            msk = cv2.imread(msk_path, cv2.COLOR_BGR2RGB).astype('float32')
+            msk /= 255.0  # scale mask to [0, 1]
 
         ### augmentations
         data = self.transforms(image=img, mask=msk)
@@ -55,22 +62,6 @@ class UWDataset(Dataset):
         img = np.transpose(img, (2, 0, 1))  # [c, h, w]
         msk = np.transpose(msk, (2, 0, 1))  # [c, h, w]
         return torch.tensor(img), torch.tensor(msk)
-
-
-class UW25dDataset(Dataset):
-    def __init__(self, df, transforms=None):
-        super(UW25dDataset, self).__init__()
-        self.df = df
-        self.ids = df['id'].tolist()
-
-        self.imgs_path = df['image_paths'].tolist()
-        self.mask_path = df['mask_path'].tolist()
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, index):
-        pass
 
 
 class UWDataModule(pl.LightningDataModule):

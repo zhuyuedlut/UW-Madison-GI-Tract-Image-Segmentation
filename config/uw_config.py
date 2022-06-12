@@ -12,10 +12,12 @@ from easydict import EasyDict
 
 cfg = EasyDict()
 
-cfg.seed = 1234
-cfg.DATASET_DIR = r'/home/zhuyuedlut/Datasets/uw-madison-gi-tract-image-segmentation-2.5d'
+cfg.use_25d = True
 
-cfg.n_fold = 5
+cfg.seed = 1234
+cfg.DATASET_DIR = r'/home/zhuyuedlut/Datasets/uw-madison-gi-tract-image-segmentation'
+
+cfg.n_fold = 3
 
 cfg.img_size = [352, 352]
 
