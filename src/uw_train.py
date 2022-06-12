@@ -21,27 +21,17 @@ from glob import glob
 
 from sklearn.model_selection import StratifiedGroupKFold
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 from config.uw_config import cfg
 from datasets.uw_madison_gi import UWDataModule
 from model.uw_model import UWModel
-from tools.callbacks import model_checkpoint, early_stopping_callback
 
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
 
     wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
                                job_type='train', anonymous=False)
-
-    trainer = pl.Trainer(
-        logger=wandb_logger,
-        callbacks=[model_checkpoint, early_stopping_callback],
-        num_sanity_val_steps=0,
-        max_epochs=cfg.T_max,
-        gpus=-1,
-        progress_bar_refresh_rate=15,
-        precision=16
-    )
 
     JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
     DiceLoss = smp.losses.DiceLoss(mode='multilabel')
@@ -84,6 +74,31 @@ if __name__ == "__main__":
 
     for fold in range(cfg.n_fold):
         print(f'Start Train Fold: {fold}', flush=True)
+
+        model_checkpoint = ModelCheckpoint(
+            dirpath=cfg.output_path,
+            filename=f'{fold}-' + '{epoch}-{val_loss:2f}',
+            save_top_k=1,
+            verbose=True,
+            monitor='val_loss',
+            mode='min'
+        )
+
+        early_stopping_callback = EarlyStopping(
+            monitor='val_loss',
+            patience=cfg.patience
+        )
+
+        trainer = pl.Trainer(
+            logger=wandb_logger,
+            callbacks=[model_checkpoint, early_stopping_callback],
+            num_sanity_val_steps=0,
+            max_epochs=cfg.T_max,
+            gpus=-1,
+            progress_bar_refresh_rate=15,
+            precision=16
+        )
+
         data_module = UWDataModule(df, fold)
         model = UWModel(arch='Unet', encoder_name='resnet34', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
         trainer.fit(model, data_module)

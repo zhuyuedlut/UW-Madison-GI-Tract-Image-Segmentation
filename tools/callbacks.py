@@ -6,19 +6,7 @@
 # @brief      : pytorch-lightning train中的callback
 """
 
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+
 
 from config.uw_config import cfg
 
-model_checkpoint = ModelCheckpoint(
-    dirpath=cfg.output_path,
-    save_top_k=1,
-    verbose=True,
-    monitor='val_loss',
-    mode='min'
-)
-
-early_stopping_callback = EarlyStopping(
-    monitor='val_loss',
-    patience=cfg.patience
-)
