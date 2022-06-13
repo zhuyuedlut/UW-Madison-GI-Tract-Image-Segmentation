@@ -13,15 +13,16 @@ from easydict import EasyDict
 cfg = EasyDict()
 
 cfg.use_25d = True
+cfg.n_25d_shift = 1
 
 cfg.seed = 1234
 cfg.DATASET_DIR = r'/home/zhuyuedlut/Datasets/uw-madison-gi-tract-image-segmentation'
 
 cfg.n_fold = 3
 
-cfg.img_size = [352, 352]
+cfg.img_size = [384, 384]
 
-cfg.train_bs = 32
+cfg.train_bs = 2
 cfg.valid_bs = 64
 cfg.workers = 4
 
@@ -40,6 +41,12 @@ cfg.output_path = './checkpoints'
 cfg.data_transforms = {
     "train": A.Compose([
         A.OneOf([
+            A.Resize(*[224, 224], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[256, 256], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[288, 288], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[320, 320], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[352, 352], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[384, 384], interpolation=cv2.INTER_NEAREST, p=1.0),
             A.Resize(*cfg.img_size, interpolation=cv2.INTER_NEAREST, p=1.0),
         ], p=1),
 

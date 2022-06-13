@@ -30,8 +30,8 @@ from model.uw_model import UWModel
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
 
-    wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
-                               job_type='train', anonymous=False)
+    # wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
+    #                            job_type='train', anonymous=False)
 
     JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
     DiceLoss = smp.losses.DiceLoss(mode='multilabel')
@@ -50,14 +50,6 @@ if __name__ == "__main__":
 
     df = df.merge(df2, on=['id'])
     df['empty'] = (df['rle_len'] == 0)
-
-    if cfg.use_25d:
-        path_df = pd.DataFrame(glob(f'{cfg.DATASET_DIR}-2.5d/imgs/*'), columns=['image_path'])
-        path_df['mask_path'] = path_df['image_path'].str.replace('imgs', 'masks')
-        path_df['id'] = path_df['image_path'].map(lambda x: x.split('/')[-1].replace('.npy', ''))
-
-        df = df.drop(columns=['image_path', 'mask_path'])
-        df = df.merge(path_df, on=['id'])
 
     fault1 = 'case7_day0'
     fault2 = 'case81_day30'
@@ -90,7 +82,7 @@ if __name__ == "__main__":
         )
 
         trainer = pl.Trainer(
-            logger=wandb_logger,
+            # logger=wandb_logger,
             callbacks=[model_checkpoint, early_stopping_callback],
             num_sanity_val_steps=0,
             max_epochs=cfg.T_max,

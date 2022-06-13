@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 import matplotlib.pyplot as plt
+import torch
 
 from matplotlib.patches import Rectangle
 
@@ -86,5 +87,30 @@ def show_img(img, mask=None):
         plt.legend(handles,labels)
     plt.axis('off')
 
+
+def _max_by_axis(the_list):
+    maxes = the_list[0]
+    for sublist in the_list[1:]:
+        for index, item in enumerate(sublist):
+            maxes[index] = max(maxes[index], item)
+    return maxes
+
+
+def collate_fn(batch):
+    batch = list(zip(*batch))
+    img_list = batch[0]
+    mask_list = batch[1]
+    max_size = _max_by_axis([list(img.shape) for img in img_list])
+    batch_shape = [len(img_list)] + max_size
+    b, c, h, w = batch_shape
+    dtype = img_list[0].dtype
+    device = img_list[0].device
+    pad_imgs = torch.zeros(batch_shape, dtype=dtype, device=device)
+    pad_masks = torch.zeros(batch_shape, dtype=dtype, device=device)
+    for img, mask, pad_img, pad_mask in zip(img_list, mask_list, pad_imgs, pad_masks):
+        # img/pad_img:[c, w, h]
+        pad_img[:img.shape[0], :img.shape[1], :img.shape[2]].copy_(img)
+        pad_mask[:img.shape[0], :img.shape[1], :img.shape[2]].copy_(mask)
+    return [pad_imgs, pad_masks]
 
 

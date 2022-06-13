@@ -20,7 +20,8 @@ the bash file will add train image path to original train.csv
 
 ##### experiments record
 
-| data preprocess                          | fold   | arch | encoder  | pretrained | transformers | loss function              | valid loss | submit score |
-|------------------------------------------|--------|------|----------|------------|--------------|----------------------------|------------|--------------|
-| original grey image combine channels img | 单模     |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.11649    | 0.834        |
+| data preprocess                                              | fold | arch | encoder  | pretrained | transformers | loss function              | valid loss | submit score |
+|--------------------------------------------------------------|------|------|----------|------------|--------------|----------------------------|------------|--------------|
+| original grey image combine channels img img_size=(360, 384) | 单模   |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.11649    | 0.834        |
+| 2.5D img_size=(160, 194)                                     | 3折   |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.13349    | 0.762        |
 
