@@ -17,7 +17,6 @@ import pandas as pd
 import segmentation_models_pytorch as smp
 import pytorch_lightning as pl
 
-from glob import glob
 
 from sklearn.model_selection import StratifiedGroupKFold
 from pytorch_lightning.loggers import WandbLogger
@@ -30,8 +29,8 @@ from model.uw_model import UWModel
 if __name__ == "__main__":
     pl.seed_everything(cfg.seed)
 
-    # wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
-    #                            job_type='train', anonymous=False)
+    wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
+                               job_type='train', anonymous=False)
 
     JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
     DiceLoss = smp.losses.DiceLoss(mode='multilabel')
@@ -82,7 +81,7 @@ if __name__ == "__main__":
         )
 
         trainer = pl.Trainer(
-            # logger=wandb_logger,
+            logger=wandb_logger,
             callbacks=[model_checkpoint, early_stopping_callback],
             num_sanity_val_steps=0,
             max_epochs=cfg.T_max,
@@ -92,5 +91,5 @@ if __name__ == "__main__":
         )
 
         data_module = UWDataModule(df, fold)
-        model = UWModel(arch='Unet', encoder_name='resnet34', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
+        model = UWModel(arch='DeepLabV3Plus', encoder_name='efficientnet-b7', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
         trainer.fit(model, data_module)

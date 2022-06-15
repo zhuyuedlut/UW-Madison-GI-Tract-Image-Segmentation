@@ -22,9 +22,9 @@ cfg.n_fold = 3
 
 cfg.img_size = [384, 384]
 
-cfg.train_bs = 2
+cfg.train_bs = 64
 cfg.valid_bs = 64
-cfg.workers = 4
+cfg.workers = 64
 
 cfg.num_classes = 3
 

@@ -34,7 +34,6 @@ class UWDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, index):
-        img_id = self.ids[index]
         img_path = self.img_paths[index]
 
         if cfg.use_25d:
@@ -47,8 +46,7 @@ class UWDataset(Dataset):
                 img /= mx  # scale image to [0, 1]
 
         msk_path = self.mask_paths[index]
-        msk = cv2.imread(msk_path, cv2.COLOR_BGR2RGB).astype('float32')
-        msk /= 255.0  # scale mask to [0, 1]
+        msk = self.load_2_5d_slice(msk_path)
 
         ### augmentations
         data = self.transforms(image=img, mask=msk)
