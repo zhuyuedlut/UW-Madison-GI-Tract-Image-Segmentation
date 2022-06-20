@@ -22,17 +22,17 @@ cfg.n_fold = 3
 
 cfg.img_size = [384, 384]
 
-cfg.train_bs = 64
-cfg.valid_bs = 64
-cfg.workers = 64
+cfg.train_bs = 16
+cfg.valid_bs = 32
+cfg.workers = 24
 
 cfg.num_classes = 3
 
-cfg.lr = 2e-5
+cfg.lr = 3e-5
 cfg.scheduler = 'CosineAnnealingLR'
 cfg.min_lr = 1e-6
 cfg.epochs = 25
-cfg.T_max = int(30000 / cfg.train_bs * cfg.epochs) + 50
+cfg.T_max = cfg.epochs
 cfg.T_0 = 30
 cfg.patience = 6
 
@@ -47,10 +47,11 @@ cfg.data_transforms = {
             A.Resize(*[320, 320], interpolation=cv2.INTER_NEAREST, p=1.0),
             A.Resize(*[352, 352], interpolation=cv2.INTER_NEAREST, p=1.0),
             A.Resize(*[384, 384], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[416, 416], interpolation=cv2.INTER_NEAREST, p=1.0),
+            A.Resize(*[448, 448], interpolation=cv2.INTER_NEAREST, p=1.0),
             A.Resize(*cfg.img_size, interpolation=cv2.INTER_NEAREST, p=1.0),
         ], p=1),
 
-        A.HorizontalFlip(p=0.5),
         A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.05, rotate_limit=10, p=0.5),
         A.OneOf([
             A.GridDistortion(num_steps=5, distort_limit=0.05, p=1.0),

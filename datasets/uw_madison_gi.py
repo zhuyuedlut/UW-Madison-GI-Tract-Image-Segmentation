@@ -46,7 +46,8 @@ class UWDataset(Dataset):
                 img /= mx  # scale image to [0, 1]
 
         msk_path = self.mask_paths[index]
-        msk = self.load_2_5d_slice(msk_path)
+        msk = cv2.imread(msk_path, cv2.COLOR_BGR2RGB).astype('float32')
+        msk /= 255.0  # scale mask to [0, 1]
 
         ### augmentations
         data = self.transforms(image=img, mask=msk)

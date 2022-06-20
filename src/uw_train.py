@@ -84,6 +84,7 @@ if __name__ == "__main__":
             logger=wandb_logger,
             callbacks=[model_checkpoint, early_stopping_callback],
             num_sanity_val_steps=0,
+            accumulate_grad_batches=2,
             max_epochs=cfg.T_max,
             gpus=-1,
             progress_bar_refresh_rate=15,
@@ -91,5 +92,5 @@ if __name__ == "__main__":
         )
 
         data_module = UWDataModule(df, fold)
-        model = UWModel(arch='DeepLabV3Plus', encoder_name='efficientnet-b7', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
+        model = UWModel(arch='Unet', encoder_name='efficientnet-b6', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
         trainer.fit(model, data_module)
