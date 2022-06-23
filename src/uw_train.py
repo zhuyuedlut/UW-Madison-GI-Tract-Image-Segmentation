@@ -14,9 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, '..'))
 
 import pandas as pd
-import segmentation_models_pytorch as smp
 import pytorch_lightning as pl
-
 
 from sklearn.model_selection import StratifiedGroupKFold
 from pytorch_lightning.loggers import WandbLogger
@@ -31,12 +29,6 @@ if __name__ == "__main__":
 
     wandb_logger = WandbLogger(project="UW-Madison-GI-Tract-Image-Segmentation", config=cfg, group='cv',
                                job_type='train', anonymous=False)
-
-    JaccardLoss = smp.losses.JaccardLoss(mode='multilabel')
-    DiceLoss = smp.losses.DiceLoss(mode='multilabel')
-    BCELoss = smp.losses.SoftBCEWithLogitsLoss()
-    LovaszLoss = smp.losses.LovaszLoss(mode='multilabel', per_image=False)
-    TverskyLoss = smp.losses.TverskyLoss(mode='multilabel', log_loss=False)
 
     df = pd.read_csv(f'{cfg.DATASET_DIR}-mask/train.csv')
     df['segmentation'] = df['segmentation'].fillna('')
@@ -54,29 +46,25 @@ if __name__ == "__main__":
     fault2 = 'case81_day30'
     df = df[~df['id'].str.contains(fault1) & ~df['id'].str.contains(fault2)].reset_index(drop=True)
 
-
     skf = StratifiedGroupKFold(n_splits=cfg.n_fold, shuffle=True, random_state=cfg.seed)
     for fold, (train_idx, val_idx) in enumerate(skf.split(df, df['empty'], groups=df['case'])):
         df.loc[val_idx, 'fold'] = fold
-
-    def loss_fn(y_pred, y_true):
-        return 0.5 * BCELoss(y_pred, y_true) + 0.5 * TverskyLoss(y_pred, y_true)
-
 
     for fold in range(cfg.n_fold):
         print(f'Start Train Fold: {fold}', flush=True)
 
         model_checkpoint = ModelCheckpoint(
             dirpath=cfg.output_path,
-            filename=f'{fold}-' + '{epoch}-{val_loss:2f}',
+            filename=f'{fold}-' + '{epoch}-{val_dice:4f}',
             save_top_k=1,
             verbose=True,
-            monitor='val_loss',
-            mode='min'
+            monitor='val_dice',
+            mode='max'
         )
 
         early_stopping_callback = EarlyStopping(
-            monitor='val_loss',
+            mode='max',
+            monitor='val_dice',
             patience=cfg.patience
         )
 
@@ -84,13 +72,15 @@ if __name__ == "__main__":
             logger=wandb_logger,
             callbacks=[model_checkpoint, early_stopping_callback],
             num_sanity_val_steps=0,
-            accumulate_grad_batches=2,
+            accumulate_grad_batches=1,
             max_epochs=cfg.T_max,
+            check_val_every_n_epoch=1,
             gpus=-1,
             progress_bar_refresh_rate=15,
             precision=16
         )
 
         data_module = UWDataModule(df, fold)
-        model = UWModel(arch='Unet', encoder_name='efficientnet-b6', encoder_weights='imagenet', in_channels=3, classes=3, loss_fn=loss_fn)
+        model = UWModel(arch='Unet', encoder_name='resnet34', encoder_weights='imagenet', in_channels=3, classes=3)
+
         trainer.fit(model, data_module)

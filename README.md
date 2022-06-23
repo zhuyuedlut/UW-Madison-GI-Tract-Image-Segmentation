@@ -26,5 +26,5 @@ the bash file will add train image path to original train.csv
 | 2.5D img_size=(160, 194)                                     | 3折   |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.13349    | 0.762        |
 | 2.5D + multi resolution                                      | 3折   |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.09906    | 0.857        |
 | 5D img + 3D mask + multi resolution                          | 3折   |unet             | resnet34 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.10       | 0.853        |
-| 2.5D img + 3D mask + multi resolution                        | 3折   |unet             | efficientnet-b6 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss |       |       |
+| 2.5D img + 3D mask + multi resolution                        | 3折   |unet             | efficientnet-b6 | imagenet   | yes          | 0.5BSELoss + 0.5TverskyLoss | 0.07       | 0.846        |
 
